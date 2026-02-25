@@ -59,6 +59,6 @@ submission_params:
 
 docker_config:
   allow_internet_access: true
-  image: ${REGISTRY}boredchilada/al4-webcrack:4.7.0.0
+  image: ghcr.io/boredchilada/al4-webcrack:4.7.0.0
   cpu_cores: 1.0
   ram_mb: 4096
