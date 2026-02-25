@@ -1,5 +1,5 @@
 name: webcrack
-version: $SERVICE_TAG
+version: 4.7.0.0
 description: JavaScript deobfuscation and analysis service using webcrack to deobfuscate, unminify, and unpack JavaScript files
 
 accepts: code/javascript|code/html|code/jscript|code/wsf|image/svg
@@ -59,6 +59,6 @@ submission_params:
 
 docker_config:
   allow_internet_access: true
-  image: ${REGISTRY}boredchilada/al4-webcrack:$SERVICE_TAG
+  image: ${REGISTRY}boredchilada/al4-webcrack:4.7.0.0
   cpu_cores: 1.0
   ram_mb: 4096

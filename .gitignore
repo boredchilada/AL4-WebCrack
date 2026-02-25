@@ -11,3 +11,4 @@ npm_install.log
 .DS_Store
 venv/
 setup_test_env.sh
+webcrack/

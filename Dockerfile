@@ -4,10 +4,6 @@ ENV NODE_VERSION=18.x
 ENV SERVICE_PATH=webcrack_service.WebcrackService
 ENV SERVICE_USER=assemblyline
 
-# Set Assemblyline version explicitly
-ARG version=4.7.0.0
-ENV version=$version
-
 USER root
 
 # Install Node.js from nodesource
