@@ -1,0 +1,7 @@
+assemblyline-v4-service
+assemblyline-core
+assemblyline
+python-magic
+requests
+jsbeautifier
+esprima

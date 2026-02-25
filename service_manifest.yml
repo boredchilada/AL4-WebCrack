@@ -1,0 +1,64 @@
+name: webcrack
+version: $SERVICE_TAG
+description: JavaScript deobfuscation and analysis service using webcrack to deobfuscate, unminify, and unpack JavaScript files
+
+accepts: code/javascript|code/html|code/jscript|code/wsf|image/svg
+rejects: empty|metadata/.*
+
+stage: CORE
+category: Static Analysis
+
+file_required: true
+timeout: 60
+disable_cache: false
+
+enabled: true
+is_external: false
+
+# Add logging configuration
+config:
+  log_level: DEBUG
+
+heuristics:
+  - heur_id: 1
+    name: Obfuscated JavaScript
+    description: JavaScript code appears to be obfuscated
+    filetype: code/javascript|javascript/.*
+    score: 100
+
+  - heur_id: 2
+    name: Known Obfuscator Detected
+    description: A known JavaScript obfuscator was detected (e.g. obfuscator.io)
+    filetype: code/javascript|javascript/.*
+    score: 500
+
+  - heur_id: 3
+    name: JavaScript Bundle Detected
+    description: Code appears to be a webpack or browserify bundle
+    filetype: code/javascript|javascript/.*
+    score: 100
+
+submission_params:
+  - name: deobfuscate_code
+    type: bool
+    default: true
+    value: true
+    description: Attempt to deobfuscate JavaScript code
+
+  - name: unminify_code
+    type: bool
+    default: true
+    value: true
+    description: Attempt to unminify JavaScript code
+
+  - name: unpack_bundles
+    type: bool
+    default: true
+    value: true
+    description: Attempt to unpack webpack/browserify bundles
+
+docker_config:
+  allow_internet_access: true
+  image: ${REGISTRY}boredchilada/al4-webcrack:$SERVICE_TAG
+  cpu_cores: 1.0
+  ram_mb: 4096
