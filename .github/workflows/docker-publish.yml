@@ -28,10 +28,10 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Get version from Dockerfile
+      - name: Get version from service_manifest.yml
         id: get_version
         run: |
-          VERSION=$(grep -oP '(?<=ARG version=).*' Dockerfile)
+          VERSION=$(grep "^version:" service_manifest.yml | cut -d' ' -f2 | tr -d '"'\')
           echo "::set-output name=version::$VERSION"
 
       - name: Extract metadata for Docker
