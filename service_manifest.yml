@@ -113,3 +113,4 @@ docker_config:
   image: ghcr.io/boredchilada/al4-webcrack:4.7.0.3
   cpu_cores: 1.0
   ram_mb: 4096
+
