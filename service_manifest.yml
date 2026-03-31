@@ -1,6 +1,9 @@
 name: webcrack
-version: 4.7.0.0
-description: JavaScript deobfuscation and analysis service using webcrack to deobfuscate, unminify, and unpack JavaScript files
+version: $SERVICE_TAG
+description: >
+  JavaScript deobfuscation and analysis service using webcrack to deobfuscate,
+  unminify, and unpack JavaScript files. Designed for phishing kit and malicious
+  website analysis.
 
 accepts: code/javascript|code/html|code/jscript|code/wsf|image/svg
 rejects: empty|metadata/.*
@@ -9,34 +12,76 @@ stage: CORE
 category: Static Analysis
 
 file_required: true
-timeout: 60
+timeout: 120
 disable_cache: false
 
 enabled: true
 is_external: false
 
-# Add logging configuration
 config:
-  log_level: DEBUG
+  max_deobfuscated_size: 10485760
 
 heuristics:
   - heur_id: 1
-    name: Obfuscated JavaScript
-    description: JavaScript code appears to be obfuscated
-    filetype: code/javascript|javascript/.*
+    name: Obfuscated JavaScript Deobfuscated
+    description: >
+      JavaScript code was successfully deobfuscated by webcrack, indicating
+      the original code was intentionally obfuscated to hide its true purpose.
+    filetype: "code/.*"
     score: 100
+    attack_id: T1027
 
   - heur_id: 2
     name: Known Obfuscator Detected
-    description: A known JavaScript obfuscator was detected (e.g. obfuscator.io)
-    filetype: code/javascript|javascript/.*
+    description: >
+      A known JavaScript obfuscator tool was detected (e.g. obfuscator.io).
+      This is commonly used in phishing kits and malicious scripts.
+    filetype: "code/.*"
     score: 500
+    attack_id: T1027.013
 
   - heur_id: 3
     name: JavaScript Bundle Detected
-    description: Code appears to be a webpack or browserify bundle
-    filetype: code/javascript|javascript/.*
+    description: Code appears to be a webpack or browserify bundle that was unpacked.
+    filetype: "code/.*"
+    score: 50
+
+  - heur_id: 4
+    name: Suspicious URLs Found
+    description: >
+      URLs were extracted from the deobfuscated JavaScript code. These may
+      point to phishing infrastructure or C2 servers.
+    filetype: "code/.*"
     score: 100
+    attack_id: T1566.002
+
+  - heur_id: 5
+    name: Credential Harvesting Indicators
+    description: >
+      The deobfuscated code contains patterns consistent with credential
+      harvesting such as form interception, password field access, or
+      data exfiltration via fetch/XMLHttpRequest.
+    filetype: "code/.*"
+    score: 500
+    attack_id: T1056.003
+
+  - heur_id: 6
+    name: Suspicious DOM Manipulation
+    description: >
+      The deobfuscated code manipulates the DOM in ways consistent with
+      phishing overlays, fake login forms, or content injection.
+    filetype: "code/.*"
+    score: 250
+    attack_id: T1185
+
+  - heur_id: 7
+    name: Data Exfiltration Pattern
+    description: >
+      The deobfuscated code sends collected data to an external endpoint
+      using fetch, XMLHttpRequest, navigator.sendBeacon, or similar methods.
+    filetype: "code/.*"
+    score: 300
+    attack_id: T1041
 
 submission_params:
   - name: deobfuscate_code
@@ -58,7 +103,7 @@ submission_params:
     description: Attempt to unpack webpack/browserify bundles
 
 docker_config:
-  allow_internet_access: true
-  image: ghcr.io/boredchilada/al4-webcrack:4.7.0.0
+  allow_internet_access: false
+  image: ghcr.io/boredchilada/al4-webcrack:$SERVICE_TAG
   cpu_cores: 1.0
   ram_mb: 4096
