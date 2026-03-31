@@ -1,6 +1,7 @@
 import os
 import re
 import json
+import base64
 import subprocess
 from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.result import (
@@ -34,6 +35,15 @@ DOM_PHISH_PATTERNS = [
     re.compile(r'''window\.location\s*[=]|location\.(?:href|replace|assign)\s*[=(]''', re.IGNORECASE),
     re.compile(r'''\.insertAdjacentHTML\s*\(''', re.IGNORECASE),
 ]
+# Embedded WASM patterns (base64-encoded WASM binaries in JS)
+# WASM magic bytes \x00asm = AGFzbQ in base64
+WASM_B64_PATTERNS = [
+    # data:application/wasm;base64,AGFzbQ...
+    re.compile(r'data:application/wasm;base64,([A-Za-z0-9+/=]{20,})', re.IGNORECASE),
+    # Generic base64 blob starting with WASM magic (AGFzbQ)
+    re.compile(r'''["']([A-Za-z0-9+/]{0,4}AGFzbQ[A-Za-z0-9+/=]{20,})["']'''),
+]
+
 # Known obfuscator signatures
 OBFUSCATOR_PATTERNS = [
     (re.compile(r'''_0x[0-9a-f]{4,6}\s*\('''), "obfuscator.io style"),
@@ -278,5 +288,34 @@ import fs from 'fs';
                     exfil_section.add_line(f"- {clean}")
                     seen.add(clean)
             result.add_section(exfil_section)
+
+        # Embedded WASM detection and extraction
+        wasm_count = 0
+        for pattern in WASM_B64_PATTERNS:
+            for match in pattern.finditer(analysis_target):
+                b64_data = match.group(1)
+                try:
+                    wasm_bytes = base64.b64decode(b64_data)
+                    if wasm_bytes[:4] == b"\x00asm":
+                        wasm_count += 1
+                        wasm_path = os.path.join(
+                            self.working_directory, f"embedded_{wasm_count}.wasm"
+                        )
+                        with open(wasm_path, "wb") as f:
+                            f.write(wasm_bytes)
+                        request.add_extracted(
+                            wasm_path,
+                            f"embedded_{wasm_count}.wasm",
+                            f"Embedded WebAssembly binary extracted from JavaScript ({len(wasm_bytes)} bytes)",
+                        )
+                except Exception:
+                    pass
+
+        if wasm_count > 0:
+            wasm_section = ResultSection("Embedded WebAssembly Detected", body_format=BODY_FORMAT.TEXT)
+            wasm_section.set_heuristic(8)
+            wasm_section.add_line(f"Found {wasm_count} embedded WASM binary/binaries in JavaScript code")
+            wasm_section.add_line("Extracted for analysis by WasmAnalyzer service")
+            result.add_section(wasm_section)
 
         request.result = result
