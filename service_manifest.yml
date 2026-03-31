@@ -1,5 +1,5 @@
 name: webcrack
-version: 4.7.0.2
+version: 4.7.0.3
 description: >
   JavaScript deobfuscation and analysis service using webcrack to deobfuscate,
   unminify, and unpack JavaScript files. Designed for phishing kit and malicious
@@ -110,6 +110,6 @@ submission_params:
 
 docker_config:
   allow_internet_access: false
-  image: ghcr.io/boredchilada/al4-webcrack:4.7.0.2
+  image: ghcr.io/boredchilada/al4-webcrack:4.7.0.3
   cpu_cores: 1.0
   ram_mb: 4096
