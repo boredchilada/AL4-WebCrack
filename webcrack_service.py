@@ -9,38 +9,16 @@ from assemblyline_v4_service.common.result import (
     BODY_FORMAT,
 )
 
-# Patterns for IOC extraction from deobfuscated code
+# URL pattern for IOC tagging
 URL_RE = re.compile(
     r'''(?:https?://|//)[^\s'"<>{}\[\]|\\^`\x00-\x1f]{4,500}''',
     re.IGNORECASE,
 )
-# Credential harvesting indicators
-CRED_HARVEST_PATTERNS = [
-    re.compile(r'''\.value\s*[;,].*(?:password|passwd|pwd|login|credential|ssn|credit.?card)''', re.IGNORECASE),
-    re.compile(r'''(?:getElementById|querySelector|getElementsByName)\s*\(\s*['"](?:password|passwd|pwd|user|email|login|card)''', re.IGNORECASE),
-    re.compile(r'''type\s*[=:]\s*['"]password['"]''', re.IGNORECASE),
-    re.compile(r'''(?:input|form).*(?:autocomplete|autofill).*(?:password|cc-|credit)''', re.IGNORECASE),
-]
-# Data exfiltration patterns
-EXFIL_PATTERNS = [
-    re.compile(r'''(?:fetch|XMLHttpRequest|sendBeacon|\.ajax|axios\.(?:post|put|get))\s*\(''', re.IGNORECASE),
-    re.compile(r'''new\s+WebSocket\s*\(''', re.IGNORECASE),
-    re.compile(r'''\.send\s*\(.*(?:password|token|cookie|credential|document\.cookie)''', re.IGNORECASE),
-]
-# DOM manipulation for phishing
-DOM_PHISH_PATTERNS = [
-    re.compile(r'''document\.write\s*\('''),
-    re.compile(r'''\.innerHTML\s*=\s*[^;]*(?:<form|<input|<iframe|<script)''', re.IGNORECASE),
-    re.compile(r'''createElement\s*\(\s*['"](?:iframe|form|script)['"]''', re.IGNORECASE),
-    re.compile(r'''window\.location\s*[=]|location\.(?:href|replace|assign)\s*[=(]''', re.IGNORECASE),
-    re.compile(r'''\.insertAdjacentHTML\s*\(''', re.IGNORECASE),
-]
+
 # Embedded WASM patterns (base64-encoded WASM binaries in JS)
 # WASM magic bytes \x00asm = AGFzbQ in base64
 WASM_B64_PATTERNS = [
-    # data:application/wasm;base64,AGFzbQ...
     re.compile(r'data:application/wasm;base64,([A-Za-z0-9+/=]{20,})', re.IGNORECASE),
-    # Generic base64 blob starting with WASM magic (AGFzbQ)
     re.compile(r'''["']([A-Za-z0-9+/]{0,4}AGFzbQ[A-Za-z0-9+/=]{20,})["']'''),
 ]
 
@@ -170,8 +148,13 @@ import fs from 'fs';
         if proc.returncode != 0:
             err_msg = proc.stderr.strip() if proc.stderr else "Unknown error"
             self.log.warning(f"Webcrack exited {proc.returncode}: {err_msg}")
+            try:
+                err_json = json.loads(err_msg)
+                clean_err = err_json.get("message", err_msg)
+            except (json.JSONDecodeError, TypeError):
+                clean_err = err_msg.split("\n")[0]
             error_section = ResultSection("Webcrack Analysis Error", body_format=BODY_FORMAT.TEXT)
-            error_section.add_line(f"Webcrack failed to fully process the file: {err_msg[:500]}")
+            error_section.add_line(f"Webcrack could not fully process this file: {clean_err[:300]}")
             result.add_section(error_section)
 
         # Process deobfuscated output
@@ -183,7 +166,6 @@ import fs from 'fs';
                 with open(output_path, "r", errors="replace") as f:
                     deobfuscated = f.read()
 
-        # Normalize whitespace for comparison so reformatting alone doesn't count as "changed"
         def _normalize(s):
             return re.sub(r'\s+', ' ', s).strip()
 
@@ -193,15 +175,18 @@ import fs from 'fs';
         if detected_obfuscators:
             obf_section = ResultSection("Known Obfuscator Detected", body_format=BODY_FORMAT.TEXT)
             obf_section.set_heuristic(2)
+            obf_section.add_line("The following obfuscation techniques were identified in the source code:")
             for name in detected_obfuscators:
-                obf_section.add_line(f"Pattern: {name}")
+                obf_section.add_line(f"  - {name}")
                 obf_section.heuristic.add_signature_id(name)
             result.add_section(obf_section)
 
         # Bundle detection
         if bundle_info and bundle_info.get("hasBundle") and bundle_info.get("bundleType"):
-            bundle_section = ResultKeyValueSection("JavaScript Bundle Detected")
-            bundle_section.set_item("Bundle Type", bundle_info["bundleType"])
+            bundle_type = bundle_info["bundleType"]
+            bundle_section = ResultKeyValueSection(f"{bundle_type.title()} Bundle Detected and Unpacked")
+            bundle_section.set_item("Bundle Type", bundle_type)
+            bundle_section.set_item("Status", "Unpacked by webcrack")
             bundle_section.set_heuristic(3)
             result.add_section(bundle_section)
 
@@ -211,18 +196,25 @@ import fs from 'fs';
                 output_path, "deobfuscated.js",
                 "Deobfuscated JavaScript code from webcrack",
             )
-            deobf_section = ResultSection("Deobfuscated Code Extracted", body_format=BODY_FORMAT.TEXT)
+            size_delta = len(deobfuscated) - len(js_content)
+            direction = "larger" if size_delta > 0 else "smaller"
+            deobf_section = ResultSection("JavaScript Successfully Deobfuscated", body_format=BODY_FORMAT.TEXT)
             deobf_section.set_heuristic(1)
             deobf_section.add_line(
-                f"Original size: {len(js_content)} bytes, "
-                f"deobfuscated size: {len(deobfuscated)} bytes"
+                f"Webcrack transformed the code from {len(js_content):,} bytes "
+                f"to {len(deobfuscated):,} bytes ({abs(size_delta):,} bytes {direction})"
             )
+            if detected_obfuscators:
+                deobf_section.add_line(
+                    f"Obfuscation removed: {', '.join(detected_obfuscators)}"
+                )
+            deobf_section.add_line("Deobfuscated output extracted for further analysis")
             result.add_section(deobf_section)
 
-        # IOC analysis on deobfuscated code (or original if no change)
+        # IOC tagging on deobfuscated code (or original if no change)
+        # No heuristic — just feeds tags into AL correlation engine
         analysis_target = deobfuscated if code_changed else js_content
 
-        # Extract URLs
         urls = set()
         for match in URL_RE.finditer(analysis_target):
             url = match.group(0).rstrip(".,;)'\"")
@@ -230,12 +222,14 @@ import fs from 'fs';
                 urls.add(url)
 
         if urls:
-            url_section = ResultSection("URLs Found in Code", body_format=BODY_FORMAT.TEXT)
-            url_section.set_heuristic(4)
+            source = "deobfuscated" if code_changed else "original"
+            url_section = ResultSection(
+                f"URLs Extracted from {source.title()} Code ({len(urls)} found)",
+                body_format=BODY_FORMAT.TEXT,
+            )
             for url in sorted(urls)[:50]:
                 url_section.add_line(url)
                 url_section.add_tag("network.static.uri", url)
-                # Extract domain
                 domain_match = re.search(r'//([^/:?#\s]+)', url)
                 if domain_match:
                     domain = domain_match.group(1)
@@ -245,77 +239,51 @@ import fs from 'fs';
                         url_section.add_tag("network.static.ip", domain)
             result.add_section(url_section)
 
-        # Credential harvesting detection
-        cred_matches = []
-        for pattern in CRED_HARVEST_PATTERNS:
-            for m in pattern.finditer(analysis_target):
-                cred_matches.append(m.group(0)[:200])
-        if cred_matches:
-            cred_section = ResultSection("Credential Harvesting Indicators", body_format=BODY_FORMAT.TEXT)
-            cred_section.set_heuristic(5)
-            for match_text in cred_matches[:10]:
-                cred_section.add_line(f"- {match_text.strip()}")
-            result.add_section(cred_section)
-
-        # DOM manipulation for phishing
-        dom_matches = []
-        for pattern in DOM_PHISH_PATTERNS:
-            for m in pattern.finditer(analysis_target):
-                dom_matches.append(m.group(0)[:200])
-        if dom_matches:
-            dom_section = ResultSection("Suspicious DOM Manipulation", body_format=BODY_FORMAT.TEXT)
-            dom_section.set_heuristic(6)
-            seen = set()
-            for match_text in dom_matches[:10]:
-                clean = match_text.strip()
-                if clean not in seen:
-                    dom_section.add_line(f"- {clean}")
-                    seen.add(clean)
-            result.add_section(dom_section)
-
-        # Data exfiltration patterns
-        exfil_matches = []
-        for pattern in EXFIL_PATTERNS:
-            for m in pattern.finditer(analysis_target):
-                exfil_matches.append(m.group(0)[:200])
-        if exfil_matches:
-            exfil_section = ResultSection("Data Exfiltration Pattern", body_format=BODY_FORMAT.TEXT)
-            exfil_section.set_heuristic(7)
-            seen = set()
-            for match_text in exfil_matches[:10]:
-                clean = match_text.strip()
-                if clean not in seen:
-                    exfil_section.add_line(f"- {clean}")
-                    seen.add(clean)
-            result.add_section(exfil_section)
-
         # Embedded WASM detection and extraction
-        wasm_count = 0
+        wasm_extractions = []
         for pattern in WASM_B64_PATTERNS:
             for match in pattern.finditer(analysis_target):
                 b64_data = match.group(1)
                 try:
                     wasm_bytes = base64.b64decode(b64_data)
                     if wasm_bytes[:4] == b"\x00asm":
-                        wasm_count += 1
+                        idx = len(wasm_extractions) + 1
                         wasm_path = os.path.join(
-                            self.working_directory, f"embedded_{wasm_count}.wasm"
+                            self.working_directory, f"embedded_{idx}.wasm"
                         )
                         with open(wasm_path, "wb") as f:
                             f.write(wasm_bytes)
                         request.add_extracted(
                             wasm_path,
-                            f"embedded_{wasm_count}.wasm",
-                            f"Embedded WebAssembly binary extracted from JavaScript ({len(wasm_bytes)} bytes)",
+                            f"embedded_{idx}.wasm",
+                            f"Base64-encoded WebAssembly binary extracted from JavaScript ({len(wasm_bytes)} bytes)",
                         )
+                        full_match = match.group(0)
+                        if "data:application/wasm;base64," in full_match.lower():
+                            encoding_method = "data: URI (data:application/wasm;base64,...)"
+                        else:
+                            encoding_method = "base64 string literal"
+                        wasm_extractions.append({
+                            "size": len(wasm_bytes),
+                            "b64_size": len(b64_data),
+                            "encoding": encoding_method,
+                        })
                 except Exception:
                     pass
 
-        if wasm_count > 0:
+        if wasm_extractions:
             wasm_section = ResultSection("Embedded WebAssembly Detected", body_format=BODY_FORMAT.TEXT)
-            wasm_section.set_heuristic(8)
-            wasm_section.add_line(f"Found {wasm_count} embedded WASM binary/binaries in JavaScript code")
-            wasm_section.add_line("Extracted for analysis by WasmAnalyzer service")
+            wasm_section.set_heuristic(4)
+            wasm_section.add_line(
+                f"Found {len(wasm_extractions)} base64-encoded WebAssembly "
+                f"{'binary' if len(wasm_extractions) == 1 else 'binaries'} "
+                f"embedded in JavaScript code:"
+            )
+            for i, info in enumerate(wasm_extractions, 1):
+                wasm_section.add_line(
+                    f"  #{i}: {info['size']:,} bytes decoded from "
+                    f"{info['b64_size']:,} chars base64 via {info['encoding']}"
+                )
             result.add_section(wasm_section)
 
         request.result = result

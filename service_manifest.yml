@@ -1,9 +1,9 @@
 name: webcrack
-version: 4.7.0.4
+version: 4.7.0.5
 description: >
   JavaScript deobfuscation and analysis service using webcrack to deobfuscate,
-  unminify, and unpack JavaScript files. Designed for phishing kit and malicious
-  website analysis.
+  unminify, and unpack JavaScript files. Extracts embedded WebAssembly binaries
+  and tags URLs/domains/IPs found in deobfuscated output.
 
 accepts: code/javascript|code/html|code/jscript|code/wsf|image/svg
 rejects: empty|metadata/.*
@@ -49,47 +49,6 @@ heuristics:
     score: 50
 
   - heur_id: 4
-    name: Suspicious URLs Found
-    description: >
-      URLs were extracted from the deobfuscated JavaScript code. These may
-      point to phishing infrastructure or C2 servers.
-    filetype: "code/.*"
-    score: 100
-    attack_id:
-      - T1566.002
-
-  - heur_id: 5
-    name: Credential Harvesting Indicators
-    description: >
-      The deobfuscated code contains patterns consistent with credential
-      harvesting such as form interception, password field access, or
-      data exfiltration via fetch/XMLHttpRequest.
-    filetype: "code/.*"
-    score: 500
-    attack_id:
-      - T1056.003
-
-  - heur_id: 6
-    name: Suspicious DOM Manipulation
-    description: >
-      The deobfuscated code manipulates the DOM in ways consistent with
-      phishing overlays, fake login forms, or content injection.
-    filetype: "code/.*"
-    score: 250
-    attack_id:
-      - T1185
-
-  - heur_id: 7
-    name: Data Exfiltration Pattern
-    description: >
-      The deobfuscated code sends collected data to an external endpoint
-      using fetch, XMLHttpRequest, navigator.sendBeacon, or similar methods.
-    filetype: "code/.*"
-    score: 300
-    attack_id:
-      - T1041
-
-  - heur_id: 8
     name: Embedded WebAssembly Detected
     description: >
       JavaScript code contains an embedded WebAssembly binary encoded as base64.
@@ -121,7 +80,6 @@ submission_params:
 
 docker_config:
   allow_internet_access: false
-  image: ghcr.io/boredchilada/al4-webcrack:4.7.0.4
+  image: ghcr.io/boredchilada/al4-webcrack:4.7.0.5
   cpu_cores: 1.0
   ram_mb: 4096
-
