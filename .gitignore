@@ -12,3 +12,4 @@ npm_install.log
 venv/
 setup_test_env.sh
 webcrack/
+CLAUDE.md
