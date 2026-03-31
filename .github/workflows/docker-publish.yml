@@ -28,10 +28,10 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Get version from Dockerfile
+      - name: Get version from service manifest
         id: get_version
         run: |
-          VERSION=$(grep '^ARG version=' Dockerfile | cut -d'=' -f2)
+          VERSION=$(grep '^version:' service_manifest.yml | awk '{print $2}')
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Extract metadata for Docker
@@ -48,7 +48,5 @@ jobs:
         with:
           context: .
           push: ${{ github.event_name != 'pull_request' }}
-          build-args: |
-            version=${{ steps.get_version.outputs.version }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

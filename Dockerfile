@@ -37,10 +37,7 @@ RUN mkdir -p /opt/al_service/node_modules && \
 # Copy service code
 COPY . .
 
-# Patch version in manifest
-ARG version=4.7.0.1
 USER root
-RUN sed -i -e "s/\$SERVICE_TAG/$version/g" service_manifest.yml && \
-    chown -R assemblyline:assemblyline /opt/al_service
+RUN chown -R assemblyline:assemblyline /opt/al_service
 
 USER assemblyline

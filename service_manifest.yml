@@ -1,5 +1,5 @@
 name: webcrack
-version: $SERVICE_TAG
+version: 4.7.0.2
 description: >
   JavaScript deobfuscation and analysis service using webcrack to deobfuscate,
   unminify, and unpack JavaScript files. Designed for phishing kit and malicious
@@ -29,7 +29,8 @@ heuristics:
       the original code was intentionally obfuscated to hide its true purpose.
     filetype: "code/.*"
     score: 100
-    attack_id: T1027
+    attack_id:
+      - T1027
 
   - heur_id: 2
     name: Known Obfuscator Detected
@@ -38,7 +39,8 @@ heuristics:
       This is commonly used in phishing kits and malicious scripts.
     filetype: "code/.*"
     score: 500
-    attack_id: T1027.013
+    attack_id:
+      - T1027.013
 
   - heur_id: 3
     name: JavaScript Bundle Detected
@@ -53,7 +55,8 @@ heuristics:
       point to phishing infrastructure or C2 servers.
     filetype: "code/.*"
     score: 100
-    attack_id: T1566.002
+    attack_id:
+      - T1566.002
 
   - heur_id: 5
     name: Credential Harvesting Indicators
@@ -63,7 +66,8 @@ heuristics:
       data exfiltration via fetch/XMLHttpRequest.
     filetype: "code/.*"
     score: 500
-    attack_id: T1056.003
+    attack_id:
+      - T1056.003
 
   - heur_id: 6
     name: Suspicious DOM Manipulation
@@ -72,7 +76,8 @@ heuristics:
       phishing overlays, fake login forms, or content injection.
     filetype: "code/.*"
     score: 250
-    attack_id: T1185
+    attack_id:
+      - T1185
 
   - heur_id: 7
     name: Data Exfiltration Pattern
@@ -81,7 +86,8 @@ heuristics:
       using fetch, XMLHttpRequest, navigator.sendBeacon, or similar methods.
     filetype: "code/.*"
     score: 300
-    attack_id: T1041
+    attack_id:
+      - T1041
 
 submission_params:
   - name: deobfuscate_code
@@ -104,6 +110,6 @@ submission_params:
 
 docker_config:
   allow_internet_access: false
-  image: ghcr.io/boredchilada/al4-webcrack:$SERVICE_TAG
+  image: ghcr.io/boredchilada/al4-webcrack:4.7.0.2
   cpu_cores: 1.0
   ram_mb: 4096
