@@ -173,7 +173,11 @@ import fs from 'fs';
                 with open(output_path, "r", errors="replace") as f:
                     deobfuscated = f.read()
 
-        code_changed = deobfuscated and deobfuscated.strip() != js_content.strip()
+        # Normalize whitespace for comparison so reformatting alone doesn't count as "changed"
+        def _normalize(s):
+            return re.sub(r'\s+', ' ', s).strip()
+
+        code_changed = deobfuscated and _normalize(deobfuscated) != _normalize(js_content)
 
         # Known obfuscator detection
         if detected_obfuscators:
