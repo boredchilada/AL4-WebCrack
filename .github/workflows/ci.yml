@@ -1,0 +1,18 @@
+name: ci
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    # Inert on Forgejo; active once the repo moves to GitHub.
+    if: github.server_url == 'https://github.com'
+    runs-on: ubuntu-latest
+    steps:
+      # actions/checkout v7.0.1, pinned by commit
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - run: bash scripts/build-image.sh svc:ci 4.7.0.dev0
+      - run: bash scripts/ci-gate.sh svc:ci

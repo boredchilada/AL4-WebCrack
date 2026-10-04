@@ -1,0 +1,19 @@
+[project]
+name = "al4-webcrack"
+requires-python = ">=3.11"
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+
+[tool.pyright]
+pythonVersion = "3.11"
+typeCheckingMode = "standard"
+include = ["webcrack_", "tests", "scripts"]
+
+[tool.pytest.ini_options]
+# Only the tests folder: local scratch in an ignored directory must not be collected.
+testpaths = ["tests"]

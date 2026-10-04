@@ -1,15 +1,15 @@
-node_modules/
 __pycache__/
 *.pyc
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+node_modules/
+
+# Local scratch, never published
+CLAUDE.md
 internal/
 output/
-test_files/
-tests/
 logger.py
 webcrack.log
-npm_install.log
-.DS_Store
-venv/
-setup_test_env.sh
 webcrack/
-CLAUDE.md

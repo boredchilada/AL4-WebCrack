@@ -1,0 +1,8 @@
+# Test and CI tooling only; never installed into the service image.
+# Direct dependencies pinned exactly. PyYAML comes from the base image.
+assemblyline-service-utilities==4.6.1.2
+pytest==9.1.1
+ruff==0.16.10
+# [nodejs] runs pyright on a pinned Node wheel instead of downloading Node at runtime.
+pyright[nodejs]==1.1.414
+nodejs-wheel-binaries==24.19.0

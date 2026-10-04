@@ -1,44 +1,48 @@
-# WebCrack Service for Assemblyline 4
+# WebCrack
 
-This is a custom Assemblyline 4 service that implements [WebCrack](https://github.com/j4k0xb/webcrack) (v2.16.0-beta.1), a tool for reverse engineering, deobfuscating, and unpacking JavaScript. Designed for phishing kit and malicious website analysis.
+AssemblyLine 4 service that deobfuscates, unminifies and unpacks JavaScript with [webcrack](https://github.com/j4k0xb/webcrack). Deobfuscated code and any embedded WebAssembly are resubmitted to AssemblyLine for further analysis, and URLs, domains and IPs found in the result are tagged.
 
-## Features
+The service is static only. Behavioural JavaScript detection (eval chains, phishing pages, exfiltration) is left to the official JsJaws service.
 
-- **Deobfuscation**: Automatically reverses obfuscation techniques from tools like Obfuscator.io.
-- **Unminification**: Formats and beautifies minified JavaScript for analyst readability.
-- **Bundle Unpacking**: Detects and unpacks JavaScript bundles (Webpack 4/5, Browserify) into their constituent modules.
-- **IOC Extraction**: Extracts URLs, domains, and IPs from deobfuscated code and tags them for AL correlation.
-- **Phishing Detection**: Identifies credential harvesting patterns, suspicious DOM manipulation, and data exfiltration indicators.
-- **Result Extraction**: Deobfuscated code is automatically resubmitted to Assemblyline as an extracted child file for recursive analysis.
+## Accepted files
 
-## Submission Parameters
-
-- `deobfuscate_code` (Boolean, Default: True): Attempt to deobfuscate JavaScript code.
-- `unminify_code` (Boolean, Default: True): Attempt to unminify JavaScript code.
-- `unpack_bundles` (Boolean, Default: True): Attempt to unpack webpack/browserify bundles.
+`code/javascript`, `code/html`, `code/jscript`, `code/wsf`, `image/svg`
 
 ## Heuristics
 
-| ID | Name | Score | MITRE ATT&CK | Description |
-|----|------|-------|---------------|-------------|
-| 1 | Obfuscated JavaScript Deobfuscated | 100 | T1027 | Code was successfully deobfuscated |
-| 2 | Known Obfuscator Detected | 500 | T1027.013 | Known obfuscator tool detected (e.g. obfuscator.io) |
-| 3 | JavaScript Bundle Detected | 50 | - | Webpack or Browserify bundle unpacked |
-| 4 | Suspicious URLs Found | 100 | T1566.002 | URLs extracted from deobfuscated code |
-| 5 | Credential Harvesting Indicators | 500 | T1056.003 | Form interception, password field access patterns |
-| 6 | Suspicious DOM Manipulation | 250 | T1185 | Phishing overlays, fake login forms, content injection |
-| 7 | Data Exfiltration Pattern | 300 | T1041 | Data sent to external endpoints via fetch/XHR/sendBeacon |
+| ID | Name | Score | ATT&CK |
+|---|---|---|---|
+| 1 | Obfuscated JavaScript deobfuscated | 100 | T1027 |
+| 2 | Known obfuscator detected | 500 | T1027.013 |
+| 3 | JavaScript bundle detected | 50 | |
+| 4 | Embedded WebAssembly detected | 500 | T1027.009 |
 
-## Installation
+Heuristic 2 records which markers matched as signatures: `obfuscator_io_call`, `obfuscator_io_string_array`, `atob_long_string`.
 
-1. In the AL4 UI, go to **Administration > Services > Add Service**
-2. Paste the contents of `service_manifest.yml`
-3. The Docker image is automatically built and pushed to `ghcr.io/boredchilada/al4-webcrack` via GitHub Actions on push to `main`
+## Output
 
-## Version Bumping
+- Extracted `deobfuscated.js` when webcrack changed the code.
+- Extracted `embedded_N.wasm` for each base64-encoded WebAssembly module (data URIs and string literals).
+- Tags: `network.static.uri`, `network.static.domain`, `network.static.ip`. URLs are tagged without a score.
 
-Update the version in two places in `service_manifest.yml`:
-- `version:` field at the top
-- `docker_config.image:` tag at the bottom
+## Configuration
 
-Then commit and push. CI will build and tag the image automatically.
+| Key | Default | Meaning |
+|---|---|---|
+| `max_deobfuscated_size` | 10485760 | Larger webcrack output is not analysed or extracted. |
+
+Submission parameters `deobfuscate_code`, `unminify_code` and `unpack_bundles` (all default `true`) switch the matching webcrack transforms.
+
+## Build
+
+The image builds webcrack from a pinned upstream commit (`WEBCRACK_COMMIT` in the Dockerfile) on Node.js 24 LTS, including the `isolated-vm` sandbox that string-decoder deobfuscation depends on. The build fails if `isolated-vm` does not load or webcrack does not run.
+
+## Development
+
+```bash
+bash scripts/build-image.sh al4-webcrack:test 4.7.0.dev0 podman
+bash scripts/ci-gate.sh al4-webcrack:test podman
+```
+
+Releases are git tags: `v4.7.0.devN` for test builds, `v4.7.0.stableN` for releases.
+

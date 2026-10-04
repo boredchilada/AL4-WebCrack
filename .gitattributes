@@ -1,0 +1,5 @@
+* text=auto eol=lf
+# Sample bytes must never be converted: TestHelper keys results by SHA-256.
+tests/samples/** -text
+*.png binary
+*.zip binary

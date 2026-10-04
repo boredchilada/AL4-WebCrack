@@ -1,0 +1,66 @@
+{
+  "extra": {
+    "drop_file": false,
+    "score": 0,
+    "sections": [
+      {
+        "auto_collapse": false,
+        "body": [
+          {
+            "host": "shop.example.com",
+            "url": "https://shop.example.com/help"
+          }
+        ],
+        "body_config": {
+          "column_order": [
+            "url",
+            "host"
+          ]
+        },
+        "body_format": "TABLE",
+        "classification": "TLP:C",
+        "depth": 0,
+        "heuristic": null,
+        "promote_to": null,
+        "tags": {
+          "network": {
+            "static": {
+              "domain": [
+                "shop.example.com"
+              ],
+              "uri": [
+                "https://shop.example.com/help"
+              ]
+            }
+          }
+        },
+        "title_text": "URLs in original code",
+        "zeroize_on_tag_safe": false
+      }
+    ]
+  },
+  "files": {
+    "extracted": [],
+    "supplementary": []
+  },
+  "results": {
+    "heuristics": [],
+    "tags": {
+      "network.static.domain": [
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "shop.example.com"
+        }
+      ],
+      "network.static.uri": [
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "https://shop.example.com/help"
+        }
+      ]
+    },
+    "temp_submission_data": {}
+  }
+}

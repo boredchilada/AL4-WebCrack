@@ -1,85 +1,70 @@
-name: webcrack
-version: 4.7.0.5
-description: >
-  JavaScript deobfuscation and analysis service using webcrack to deobfuscate,
-  unminify, and unpack JavaScript files. Extracts embedded WebAssembly binaries
-  and tags URLs/domains/IPs found in deobfuscated output.
+name: WebCrack
+version: $SERVICE_TAG
+description: >-
+  Deobfuscates, unminifies and unpacks JavaScript with webcrack. Resubmits deobfuscated code and
+  embedded WebAssembly for further analysis, and tags URLs, domains and IPs found in the result.
+  Static only: behavioural JavaScript detection is JsJaws's job.
 
 accepts: code/javascript|code/html|code/jscript|code/wsf|image/svg
 rejects: empty|metadata/.*
-
 stage: CORE
 category: Static Analysis
-
 file_required: true
 timeout: 120
 disable_cache: false
-
 enabled: true
 is_external: false
+privileged: false
 
 config:
   max_deobfuscated_size: 10485760
-
-heuristics:
-  - heur_id: 1
-    name: Obfuscated JavaScript Deobfuscated
-    description: >
-      JavaScript code was successfully deobfuscated by webcrack, indicating
-      the original code was intentionally obfuscated to hide its true purpose.
-    filetype: "code/.*"
-    score: 100
-    attack_id:
-      - T1027
-
-  - heur_id: 2
-    name: Known Obfuscator Detected
-    description: >
-      A known JavaScript obfuscator tool was detected (e.g. obfuscator.io).
-      This is commonly used in phishing kits and malicious scripts.
-    filetype: "code/.*"
-    score: 500
-    attack_id:
-      - T1027.013
-
-  - heur_id: 3
-    name: JavaScript Bundle Detected
-    description: Code appears to be a webpack or browserify bundle that was unpacked.
-    filetype: "code/.*"
-    score: 50
-
-  - heur_id: 4
-    name: Embedded WebAssembly Detected
-    description: >
-      JavaScript code contains an embedded WebAssembly binary encoded as base64.
-      WASM is commonly used in phishing kits to hide cryptomining, credential
-      harvesting, or obfuscated logic from text-based scanners.
-    filetype: "code/.*"
-    score: 500
-    attack_id:
-      - T1027.009
 
 submission_params:
   - name: deobfuscate_code
     type: bool
     default: true
     value: true
-    description: Attempt to deobfuscate JavaScript code
-
   - name: unminify_code
     type: bool
     default: true
     value: true
-    description: Attempt to unminify JavaScript code
-
   - name: unpack_bundles
     type: bool
     default: true
     value: true
-    description: Attempt to unpack webpack/browserify bundles
+
+heuristics:
+  - heur_id: 1
+    name: Obfuscated JavaScript deobfuscated
+    score: 100
+    filetype: code/.*
+    description: webcrack changed the code beyond whitespace, so it was obfuscated or minified.
+    attack_id:
+      - T1027
+  - heur_id: 2
+    name: Known obfuscator detected
+    score: 500
+    filetype: code/.*
+    description: Markers of a known JavaScript obfuscator such as obfuscator.io.
+    attack_id:
+      - T1027.013
+  - heur_id: 3
+    name: JavaScript bundle detected
+    score: 50
+    filetype: code/.*
+    description: A webpack or browserify bundle was found and unpacked.
+  - heur_id: 4
+    name: Embedded WebAssembly detected
+    score: 500
+    filetype: code/.*
+    description: >-
+      Base64-encoded WebAssembly inside JavaScript, a way to hide logic such as cryptomining from
+      text-based scanners. The binaries are extracted for WasmAnalyzer.
+    attack_id:
+      - T1027.009
 
 docker_config:
-  allow_internet_access: false
-  image: ghcr.io/boredchilada/al4-webcrack:4.7.0.5
+  image: ghcr.io/boredchilada/al4-webcrack:$SERVICE_TAG
   cpu_cores: 1.0
   ram_mb: 4096
+  allow_internet_access: false

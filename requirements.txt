@@ -1,4 +1,4 @@
-assemblyline-v4-service
-assemblyline-core
+# Framework packages: unpinned, provided by the base image.
 assemblyline
-python-magic
+assemblyline-v4-service
+# Third-party packages: pin exactly with ==
