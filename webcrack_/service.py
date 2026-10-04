@@ -42,8 +42,10 @@ class WebCrack(ServiceBase):
             source = decode_source(handle.read())
 
         obfuscators = detect_obfuscators(source)
-        transformed, bundle_type, error = self._run_webcrack(request, source)
-        changed = code_changed(source, transformed)
+        transformed, baseline, bundle_type, error = self._run_webcrack(request, source)
+        # Against webcrack's own reprint, so pure reformatting (quotes, parentheses, line breaks) does
+        # not count as deobfuscation. Falls back to the source if the reprint is unavailable.
+        changed = code_changed(baseline if baseline is not None else source, transformed)
 
         if error:
             # Analyst visibility only: malformed or unsupported JavaScript is common and not a finding.
@@ -84,10 +86,13 @@ class WebCrack(ServiceBase):
 
         request.result = result
 
-    def _run_webcrack(self, request: ServiceRequest, source: str) -> tuple[str | None, str | None, str | None]:
-        """Returns (transformed code, bundle type, error message)."""
+    def _run_webcrack(
+        self, request: ServiceRequest, source: str
+    ) -> tuple[str | None, str | None, str | None, str | None]:
+        """Returns (transformed code, reprint baseline, bundle type, error message)."""
         workdir = Path(self.working_directory)
-        input_path, output_path, info_path = workdir / "input.js", workdir / "deobfuscated.js", workdir / "info.json"
+        input_path, output_path = workdir / "input.js", workdir / "deobfuscated.js"
+        baseline_path, info_path = workdir / "reprint.js", workdir / "info.json"
         input_path.write_text(source, encoding="utf-8")
         options = {
             "deobfuscate": request.get_param("deobfuscate_code"),
@@ -96,12 +101,12 @@ class WebCrack(ServiceBase):
         }
         try:
             proc = subprocess.run(
-                ["node", "--max-old-space-size=3072", str(RUNNER), str(input_path), str(output_path), str(info_path),
-                 json.dumps(options)],
+                ["node", "--max-old-space-size=3072", str(RUNNER), str(input_path), str(output_path),
+                 str(baseline_path), str(info_path), json.dumps(options)],
                 capture_output=True, text=True, timeout=NODE_TIMEOUT, cwd=workdir,
             )
         except subprocess.TimeoutExpired:
-            return None, None, f"webcrack timed out after {NODE_TIMEOUT} s"
+            return None, None, None, f"webcrack timed out after {NODE_TIMEOUT} s"
 
         error = None
         if proc.returncode != 0:
@@ -112,10 +117,12 @@ class WebCrack(ServiceBase):
             except (ValueError, AttributeError):
                 error = raw.splitlines()[0]
 
-        transformed = None
+        transformed = baseline = None
         max_size = int((self.config or {}).get("max_deobfuscated_size", 10 * 1024 * 1024))
         if output_path.is_file() and output_path.stat().st_size <= max_size:
             transformed = output_path.read_text(errors="replace")
+            if baseline_path.is_file():
+                baseline = baseline_path.read_text(errors="replace")
 
         bundle_type = None
         if info_path.is_file():
@@ -123,7 +130,7 @@ class WebCrack(ServiceBase):
                 bundle_type = json.loads(info_path.read_text()).get("bundleType")
             except ValueError:
                 pass
-        return transformed, bundle_type, error
+        return transformed, baseline, bundle_type, error
 
     @staticmethod
     def _add_url_section(result: Result, code: str, origin: str) -> None:

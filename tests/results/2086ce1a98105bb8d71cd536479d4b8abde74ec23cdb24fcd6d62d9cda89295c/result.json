@@ -1,33 +1,8 @@
 {
   "extra": {
     "drop_file": false,
-    "score": 600,
+    "score": 500,
     "sections": [
-      {
-        "auto_collapse": false,
-        "body": {
-          "deobfuscated_size": 351,
-          "original_size": 367
-        },
-        "body_config": {},
-        "body_format": "KEY_VALUE",
-        "classification": "TLP:C",
-        "depth": 0,
-        "heuristic": {
-          "attack_ids": [
-            "T1027"
-          ],
-          "frequency": 1,
-          "heur_id": 1,
-          "score": 100,
-          "score_map": {},
-          "signatures": {}
-        },
-        "promote_to": null,
-        "tags": {},
-        "title_text": "JavaScript deobfuscated",
-        "zeroize_on_tag_safe": false
-      },
       {
         "auto_collapse": false,
         "body": [
@@ -71,23 +46,12 @@
       {
         "name": "embedded_1.wasm",
         "sha256": "70eaface115ced46dab817b5b79b844c7f04b5078a08834d3bd7c39d466d8c9f"
-      },
-      {
-        "name": "deobfuscated.js",
-        "sha256": "af6c93f20d08884583f3a21b9bc17bf77cb1154a5ca209c8c2cf00c7f44a6e3b"
       }
     ],
     "supplementary": []
   },
   "results": {
     "heuristics": [
-      {
-        "attack_ids": [
-          "T1027"
-        ],
-        "heur_id": 1,
-        "signatures": []
-      },
       {
         "attack_ids": [
           "T1027.009"
