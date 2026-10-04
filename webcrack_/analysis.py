@@ -6,10 +6,12 @@ import hashlib
 import ipaddress
 import re
 from dataclasses import dataclass
+from html.parser import HTMLParser
 from urllib.parse import urlsplit
 
 MAX_URLS = 50
 MAX_WASM_BLOBS = 20
+MAX_SCRIPTS = 50
 
 _URL = re.compile(r"""(?:https?://|//)[^\s'"<>{}\[\]|\\^`\x00-\x1f]{4,500}""", re.IGNORECASE)
 
@@ -107,3 +109,49 @@ def find_wasm_blobs(source: str) -> list[WasmBlob]:
             if len(blobs) >= MAX_WASM_BLOBS:
                 return blobs
     return blobs
+
+
+_MARKUP_TAG = re.compile(r"<\s*(!doctype|html|head|body|script|svg|div|form|iframe)\b", re.IGNORECASE)
+_JS_TYPES = {"", "text/javascript", "application/javascript", "application/x-javascript", "text/ecmascript",
+             "application/ecmascript", "text/jscript", "module"}
+_CDATA = re.compile(r"^\s*(?://\s*)?<!\[CDATA\[(.*?)(?://\s*)?\]\]>\s*$", re.DOTALL)
+
+
+def looks_like_markup(source: str) -> bool:
+    """True for HTML/SVG documents. Decided by content: AL sometimes labels JavaScript as HTML."""
+    head = source.lstrip("\ufeff \t\r\n")
+    return head.startswith("<") and bool(_MARKUP_TAG.search(head[:65536]))
+
+
+class _ScriptCollector(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=False)
+        self.scripts: list[str] = []
+        self._current: list[str] | None = None
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag == "script":
+            values = {name: (value or "") for name, value in attrs}
+            script_type = values.get("type", "").split(";")[0].strip().lower()
+            self._current = [] if script_type in _JS_TYPES and "src" not in values else None
+
+    def handle_data(self, data: str) -> None:
+        if self._current is not None:
+            self._current.append(data)
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag == "script" and self._current is not None:
+            code = "".join(self._current)
+            cdata = _CDATA.match(code)
+            code = (cdata.group(1) if cdata else code).strip()
+            if code and len(self.scripts) < MAX_SCRIPTS:
+                self.scripts.append(code)
+            self._current = None
+
+
+def extract_inline_scripts(markup: str) -> list[str]:
+    """Inline JavaScript from <script> blocks; external (src=) and non-JS types are skipped."""
+    collector = _ScriptCollector()
+    collector.feed(markup)
+    collector.close()
+    return collector.scripts

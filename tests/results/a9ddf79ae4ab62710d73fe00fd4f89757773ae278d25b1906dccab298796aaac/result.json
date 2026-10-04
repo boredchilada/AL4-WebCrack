@@ -7,12 +7,14 @@
         "auto_collapse": false,
         "body": [
           {
-            "host": "shop.example.com",
-            "url": "https://shop.example.com/help"
+            "host": "svg.example.com",
+            "script": "script 1",
+            "url": "https://svg.example.com/s"
           }
         ],
         "body_config": {
           "column_order": [
+            "script",
             "url",
             "host"
           ]
@@ -26,10 +28,10 @@
           "network": {
             "static": {
               "domain": [
-                "shop.example.com"
+                "svg.example.com"
               ],
               "uri": [
-                "https://shop.example.com/help"
+                "https://svg.example.com/s"
               ]
             }
           }
@@ -50,14 +52,14 @@
         {
           "heur_id": null,
           "signatures": [],
-          "value": "shop.example.com"
+          "value": "svg.example.com"
         }
       ],
       "network.static.uri": [
         {
           "heur_id": null,
           "signatures": [],
-          "value": "https://shop.example.com/help"
+          "value": "https://svg.example.com/s"
         }
       ]
     },

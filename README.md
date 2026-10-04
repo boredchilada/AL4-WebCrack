@@ -8,6 +8,8 @@ The service is static only. Behavioural JavaScript detection (eval chains, phish
 
 `code/javascript`, `code/html`, `code/jscript`, `code/wsf`, `image/svg`
 
+HTML and SVG documents are recognised by their content, and each inline `<script>` block is analysed separately. External scripts (`src=`), non-JavaScript script types such as JSON-LD, and inline event handlers are skipped. Files labelled as HTML that are not markup are analysed as JavaScript.
+
 ## Heuristics
 
 | ID | Name | Score | ATT&CK |
@@ -17,13 +19,16 @@ The service is static only. Behavioural JavaScript detection (eval chains, phish
 | 3 | JavaScript bundle detected | 50 | |
 | 4 | Embedded WebAssembly detected | 500 | T1027.009 |
 
+Heuristic 1 fires only when webcrack's deobfuscation step changed the code, for example by decoding a string array or an `eval(atob(...))` payload. Unminifying or reformatting does not count, so minified libraries such as jQuery or React score 0.
+
 Heuristic 2 records which markers matched as signatures: `obfuscator_io_call`, `obfuscator_io_string_array`, `atob_long_string`.
 
 ## Output
 
-- Extracted `deobfuscated.js` when webcrack changed the code.
+- Extracted `deobfuscated.js` (or `script_N_deobfuscated.js` for an inline script) when webcrack deobfuscated the code or unpacked a bundle.
 - Extracted `embedded_N.wasm` for each base64-encoded WebAssembly module (data URIs and string literals).
 - Tags: `network.static.uri`, `network.static.domain`, `network.static.ip`. URLs are tagged without a score.
+- For HTML and SVG, every table has a `script` column naming the inline script a finding came from.
 
 ## Configuration
 

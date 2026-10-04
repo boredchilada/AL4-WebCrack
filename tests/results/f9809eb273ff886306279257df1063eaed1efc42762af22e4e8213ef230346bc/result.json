@@ -5,13 +5,28 @@
     "sections": [
       {
         "auto_collapse": false,
+        "body": "script 3: Unexpected token (1:9)",
+        "body_config": {},
+        "body_format": "TEXT",
+        "classification": "TLP:C",
+        "depth": 0,
+        "heuristic": null,
+        "promote_to": null,
+        "tags": {},
+        "title_text": "Webcrack could not process 1 inline script(s)",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
         "body": [
           {
+            "script": "script 1",
             "technique": "obfuscator.io style _0x calls"
           }
         ],
         "body_config": {
           "column_order": [
+            "script",
             "technique"
           ]
         },
@@ -39,13 +54,15 @@
         "auto_collapse": false,
         "body": [
           {
-            "deobfuscated_size": 266,
-            "extracted": "deobfuscated.js",
-            "original_size": 2492
+            "deobfuscated_size": 516,
+            "extracted": "script_1_deobfuscated.js",
+            "original_size": 1616,
+            "script": "script 1"
           }
         ],
         "body_config": {
           "column_order": [
+            "script",
             "original_size",
             "deobfuscated_size",
             "extracted"
@@ -73,12 +90,14 @@
         "auto_collapse": false,
         "body": [
           {
-            "host": "collector.example.com",
-            "url": "https://collector.example.com/beacon"
+            "host": "api.example.net",
+            "script": "script 1",
+            "url": "https://api.example.net/v1/telemetry"
           }
         ],
         "body_config": {
           "column_order": [
+            "script",
             "url",
             "host"
           ]
@@ -92,10 +111,10 @@
           "network": {
             "static": {
               "domain": [
-                "collector.example.com"
+                "api.example.net"
               ],
               "uri": [
-                "https://collector.example.com/beacon"
+                "https://api.example.net/v1/telemetry"
               ]
             }
           }
@@ -108,8 +127,8 @@
   "files": {
     "extracted": [
       {
-        "name": "deobfuscated.js",
-        "sha256": "3abc0d572ecb2935f0420006c936f26cce4c7b9ac30e840a9f2dd6f24dfe02bf"
+        "name": "script_1_deobfuscated.js",
+        "sha256": "0d13fd9aa0956bd59abc9243fe7e34b23b86391fa2f8245b68fe6a7017cc1f7f"
       }
     ],
     "supplementary": []
@@ -138,14 +157,14 @@
         {
           "heur_id": null,
           "signatures": [],
-          "value": "collector.example.com"
+          "value": "api.example.net"
         }
       ],
       "network.static.uri": [
         {
           "heur_id": null,
           "signatures": [],
-          "value": "https://collector.example.com/beacon"
+          "value": "https://api.example.net/v1/telemetry"
         }
       ]
     },
