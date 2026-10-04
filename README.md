@@ -46,3 +46,7 @@ bash scripts/ci-gate.sh al4-webcrack:test podman
 
 Releases are git tags: `v4.7.0.devN` for test builds, `v4.7.0.stableN` for releases.
 
+
+## License
+
+MIT. See [LICENSE](LICENSE).
