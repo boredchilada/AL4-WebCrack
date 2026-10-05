@@ -8,8 +8,6 @@ permissions:
 
 jobs:
   publish:
-    # Inert on Forgejo; active once the repo moves to GitHub.
-    if: github.server_url == 'https://github.com'
     runs-on: ubuntu-latest
     permissions:
       contents: read

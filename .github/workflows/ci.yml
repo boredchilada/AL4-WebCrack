@@ -6,8 +6,6 @@ permissions:
 
 jobs:
   gate:
-    # Inert on Forgejo; active once the repo moves to GitHub.
-    if: github.server_url == 'https://github.com'
     runs-on: ubuntu-latest
     steps:
       # actions/checkout v7.0.1, pinned by commit
